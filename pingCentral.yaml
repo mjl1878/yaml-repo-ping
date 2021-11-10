@@ -1,0 +1,218 @@
+#Note: KUBECTL APPLY -F
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: pingcentral-db
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: pingcentral-db
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pingcentral-db
+spec:
+  selector:
+    matchLabels:
+      app: pingcentral-db
+  serviceName: pingcentral-db
+  template:
+    metadata:
+      labels:
+        app: pingcentral-db
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: pingcentral-db
+        env:
+          # Use secret in real usage
+        - name: MYSQL_ROOT_PASSWORD
+          value: 2FederateM0re
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-persistent-storage
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-persistent-storage
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 4Gi
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pingcentral-environment-variables
+data:
+    SERVER_PROFILE_URL: https://github.com/pingidentity/pingidentity-server-profiles.git
+    SERVER_PROFILE_PATH: baseline/pingcentral/external-mysql-db
+    PING_CENTRAL_BLIND_TRUST: "true"
+    PING_CENTRAL_VERIFY_HOSTNAME: "false"
+    MYSQL_SERVICE_HOST: pingcentral-db
+    MYSQL_SERVICE_PORT: "3306"
+    MYSQL_DATABASE: pingcentral
+    MYSQL_USER: root
+    MYSQL_PASSWORD: 2FederateM0re
+---
+apiVersion: v1
+data:
+  pingcentral.jwk: eyJrZXlzIjpbeyJrdHkiOiJvY3QiLCJraWQiOiJNOEZEMHppNWowMDhtZmw5Iiwia2V5X29wcyI6WyJlbmNyeXB0IiwiZGVjcnlwdCJdLCJhbGciOiJBMTI4Q0JDLUhTMjU2IiwiayI6InRMamZSejk1bHAzVVRjZjhUUDdfSHl2WXpUOTBFV2VXZEZKNTRxaXRUTVUifV19
+kind: Secret
+metadata:
+  name: pingcentral-jwk
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pingcentral
+  labels:
+    role: pingcentral
+spec:
+  ports:
+    - port: 9022
+      name: https
+  selector:
+    role: pingcentral
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    role: pingcentral
+  name: pingcentral
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  selector:
+    matchLabels:
+      role: pingcentral
+  serviceName: pingcentral
+  template:
+    metadata:
+      labels:
+        role: pingcentral
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: pingcentral-environment-variables
+        - secretRef:
+            name: devops-secret
+            optional: true
+        name: pingcentral
+        image: pingidentity/pingcentral:2102
+        imagePullPolicy: Always
+        livenessProbe:
+          exec:
+            command:
+            - /opt/liveness.sh
+          failureThreshold: 4
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 5
+        ports:
+        - containerPort: 9022
+          name: https
+        readinessProbe:
+          exec:
+            command:
+            - /opt/liveness.sh
+          failureThreshold: 4
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 2
+            memory: 4Gi
+          requests:
+            cpu: 0
+            memory: 1Gi
+        volumeMounts:
+        # - mountPath: /opt/out
+        #   name: out-dir
+        - mountPath: /opt/server/conf/pingcentral.jwk
+          name: pingcentral-jwk
+          subPath: pingcentral.jwk
+          readOnly: true
+      volumes:
+      # - name: out-dir
+      #   persistentVolumeClaim:
+      #     claimName: out-dir
+      - name: pingcentral-jwk
+        secret:
+          secretName: pingcentral-jwk
+          items:
+          - key: pingcentral.jwk
+            path: pingcentral.jwk
+            
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - echo "Waiting for pingcentral-db:3306..." && wait-for pingcentral-db:3306 -t 300 -- echo "pingcentral-db:3306 running"
+        image: pingidentity/pingtoolkit:latest
+        imagePullPolicy: Always
+        name: wait-for-pingcentral-db
+        resources:
+          limits:
+            cpu: 0
+            memory: 128Mi
+          requests:
+            cpu: 0
+            memory: 64Mi
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+  # volumeClaimTemplates:
+  # - metadata:
+  #     name: out-dir
+  #   spec:
+  #     accessModes:
+  #     - ReadWriteOnce
+  #     resources:
+  #       requests:
+  #         storage: 4Gi
+---
+
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx-public
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+  labels:
+    role: pingcentral
+  name: pingcentral
+spec:
+  rules:
+  - host: pingcentral.ping-devops.com
+    http:
+      paths:
+      - backend:
+          serviceName: pingcentral
+          servicePort: 9022
+        path: /
+  tls:
+  - hosts:
+    - ${USER}-pingcentral.ping-devops.com

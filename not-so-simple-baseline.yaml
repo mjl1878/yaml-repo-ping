@@ -1,0 +1,207 @@
+## PA PF PD - tested on 0.7.2
+
+global:
+  image:
+    tag: "2108"
+  # ingress:
+  #   enabled: true
+  #   addReleaseNameToHost: prepend
+  #   defaultDomain: ping-devops.com
+  #   defaultTlsSecret:
+  #   annotations:
+  #     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  #     kubernetes.io/ingress.class: "nginx-public"
+
+pingaccess-admin:
+  enabled: true
+  privateCert:
+    generate: true
+  envs:
+    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+    SERVER_PROFILE_PATH: baseline/pingaccess
+  container:
+    replicaCount: 1
+    waitFor:
+      pingfederate-engine:
+        service: https
+
+  # This is a persistent volume claim to convert the pod from being ephemeral to stateful
+  workload:
+    type: StatefulSet
+    statefulSet:
+      persistentvolume:
+        volumes:
+          out-dir:
+            persistentVolumeClaim:
+              resources:
+                requests:
+                  storage: 2Gi
+
+  secretVolumes:
+    pingaccess-license:
+      items:
+        pingaccess.lic: /opt/in/instance/conf/pingaccess.lic
+
+pingaccess-engine:
+  enabled: true
+  envs:
+    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+    SERVER_PROFILE_PATH: baseline/pingaccess
+    # SERVER_PROFILE_BRANCH: lally-hooks
+  container:
+    replicaCount: 1
+
+  secretVolumes:
+    pingaccess-license:
+      items:
+        pingaccess.lic: /opt/in/instance/conf/pingaccess.lic
+
+# pingdatagovernance:
+#   enabled: true
+#   envs:
+#     SERVER_PROFILE_URL: https://github.com/pingidentity/pingidentity-server-profiles.git
+#     SERVER_PROFILE_PATH: baseline/pingdatagovernance
+
+# pingdataconsole:
+#   enabled: true
+
+pingdirectory:
+  container:
+    replicaCount: 1
+  enabled: true
+  envs:
+    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+    SERVER_PROFILE_PATH: baseline/pingdirectory
+
+
+  secretVolumes:
+    pingdirectory-license:
+      items:
+        PingDirectory.lic: /opt/in/pd.profile/server-root/pre-setup/PingDirectory.lic
+
+
+  # This is a persistent volume claim to convert the pod from being ephemeral to stateful
+  workload:
+    type: StatefulSet
+    statefulSet:
+      persistentvolume:
+        volumes:
+          out-dir:
+            persistentVolumeClaim:
+              resources:
+                requests:
+                  storage: 4Gi
+
+# # pingdelegator:
+# #   enabled: true
+# # envs: 
+# #   PF_ENGINE_PUBLIC_PORT: 443
+# #   PD_ENGINE_PUBLIC_PORT: 443
+# #   PD_DELEGATOR_HTTPS_PORT: 443
+# #   HTTPS_PORT: 443
+
+pingfederate-admin:
+  enabled: true
+  container:
+    replicaCount: 1
+    waitFor:
+      pingdirectory:
+        service: ldaps
+  envs:
+    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+    SERVER_PROFILE_PATH: getting-started/pingfederate
+    PF_LOG_LEVEL: DEBUG
+    
+
+  # This is a persistent volume claim to convert the pod from being ephemeral to stateful Note: Bleeding-edge until 8/5 includes the granularity to allow changes from the console to be #persisted
+
+  workload:
+    type: StatefulSet
+    statefulSet:
+      persistentvolume:
+        enabled: true
+        volumes:
+          out-dir:
+            mountPath: /opt/out/instance/server/default/data
+            persistentVolumeClaim:
+              accessModes:
+              - ReadWriteOnce
+              storageClassName:
+              resources:
+                requests:
+                  storage: 8Gi
+
+
+# This volume should be added to yaml prior to deployment to discover the license correctly
+# Must create secret with the same name as the secret-name value 
+# kubectl create secret generic pingfederate-license --from-file=./pingfederate.lic
+
+  secretVolumes:
+    pingfederate-license:
+      items:
+        pingfederate.lic: /opt/in/instance/server/default/conf/pingfederate.lic
+
+
+pingfederate-engine:
+  enabled: true
+  envs:
+    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+    SERVER_PROFILE_PATH: getting-started/pingfederate
+  clustering:
+    autoscaling:
+      enabled: false
+  container:
+    replicaCount: 1
+
+  secretVolumes:
+    pingfederate-license:
+      items:
+        pingfederate.lic: /opt/in/instance/server/default/conf/pingfederate.lic
+
+# ingress:
+#     enabled: true
+#     addReleaseNameToHost: append
+#     defaultDomain: ping-devops.com
+#     annotations:
+#       nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+#       kubernetes.io/ingress.class: "nginx-public"
+
+#PartnerPing DNS Ingress // prepend is the default config // not to be confused w the value default of subdomain
+global:
+  ingress:
+    enabled: true
+    addReleaseNameToHost: prepend
+    defaultDomain: ping-partners.com
+    defaultTlsSecret:
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      kubernetes.io/ingress.class: "nginx-public"
+
+
+#Other
+#anything below here is typically edge cases for specificity
+#prepend: pf-pingfederate-admin.ping-partners.com
+#append: pingfederate-admin-pf.ping-partners.com
+#subdomain: pingfederate-admin-pf.ping-partners.com
+
+#prepend: pf-pingfederate-admin.lallywork.com
+#append: pingfederate-admin-pf.lallywork.com
+#subdomain: pingfederate-admin.pf.lallywork.com
+
+
+# ingress:
+# hosts:  
+#   - host: _defaultDomain_ 
+#     paths: 
+#     - path: /paz-pingdataconsole 
+#     backend: 
+#      serviceName: paz-pingdataconsole 
+# tls: 
+#  - secretName: _defaultTlsSecret_ 
+#  hosts:
+
+#PingFederate JVM Mem Options
+# set all the Heap boundaries to the same value to avoid reallocations
+# -XX:InitialRAMPercentage=${JAVA_RAM_PERCENTAGE}
+# -XX:MinRAMPercentage=${JAVA_RAM_PERCENTAGE}
+# -XX:MaxRAMPercentage=${JAVA_RAM_PERCENTAGE}
