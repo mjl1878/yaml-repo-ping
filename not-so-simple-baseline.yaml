@@ -17,7 +17,7 @@ global:
 #   privateCert:
 #     generate: true
 #   envs:
-#     SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+#     SERVER_PROFILE_URL: https://github.com/mjl1878/pingidentity-server-profiles.git
 #     SERVER_PROFILE_PATH: baseline/pingaccess
 #   container:
 #     replicaCount: 1
@@ -45,7 +45,7 @@ global:
 # pingaccess-engine:
 #   enabled: true
 #   envs:
-#     SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+#     SERVER_PROFILE_URL: https://github.com/mjl1878/pingidentity-server-profiles.git
 #     SERVER_PROFILE_PATH: baseline/pingaccess
 #     # SERVER_PROFILE_BRANCH: lally-hooks
 #   container:
@@ -70,7 +70,7 @@ global:
 #     replicaCount: 1
 #   enabled: true
 #   envs:
-#     SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+#     SERVER_PROFILE_URL: https://github.com/mjl1878/pingidentity-server-profiles.git
 #     SERVER_PROFILE_PATH: baseline/pingdirectory
 
 
@@ -108,7 +108,7 @@ pingfederate-admin:
     #   pingdirectory:
     #     service: ldaps
   envs:
-    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+    SERVER_PROFILE_URL: https://github.com/mjl1878/pingidentity-server-profiles.git
     SERVER_PROFILE_PATH: getting-started/pingfederate
     PF_LOG_LEVEL: DEBUG
     
@@ -145,7 +145,7 @@ pingfederate-admin:
 pingfederate-engine:
   enabled: true
   envs:
-    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+    SERVER_PROFILE_URL: https://github.com/mjl1878/pingidentity-server-profiles.git
     SERVER_PROFILE_PATH: getting-started/pingfederate
   clustering:
     autoscaling:
@@ -167,15 +167,15 @@ pingfederate-engine:
 #       kubernetes.io/ingress.class: "nginx-public"
 
 #PartnerPing DNS Ingress // prepend is the default config // not to be confused w the value default of subdomain
-global:
-  ingress:
-    enabled: true
-    addReleaseNameToHost: prepend
-    defaultDomain: ping-partners.com
-    defaultTlsSecret:
-    annotations:
-      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-      kubernetes.io/ingress.class: "nginx-public"
+# global:
+#   ingress:
+#     enabled: true
+#     addReleaseNameToHost: prepend
+#     defaultDomain: ping-partners.com
+#     defaultTlsSecret:
+#     annotations:
+#       nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+#       kubernetes.io/ingress.class: "nginx-public"
 
 
 #Other
