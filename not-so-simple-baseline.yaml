@@ -2,7 +2,7 @@
 
 global:
   image:
-    tag: "2108"
+    tag: "2110"
   # ingress:
   #   enabled: true
   #   addReleaseNameToHost: prepend
@@ -12,49 +12,49 @@ global:
   #     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
   #     kubernetes.io/ingress.class: "nginx-public"
 
-pingaccess-admin:
-  enabled: true
-  privateCert:
-    generate: true
-  envs:
-    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
-    SERVER_PROFILE_PATH: baseline/pingaccess
-  container:
-    replicaCount: 1
-    waitFor:
-      pingfederate-engine:
-        service: https
+# pingaccess-admin:
+#   enabled: true
+#   privateCert:
+#     generate: true
+#   envs:
+#     SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+#     SERVER_PROFILE_PATH: baseline/pingaccess
+#   container:
+#     replicaCount: 1
+#     waitFor:
+#       pingfederate-engine:
+#         service: https
 
   # This is a persistent volume claim to convert the pod from being ephemeral to stateful
-  workload:
-    type: StatefulSet
-    statefulSet:
-      persistentvolume:
-        volumes:
-          out-dir:
-            persistentVolumeClaim:
-              resources:
-                requests:
-                  storage: 2Gi
+  # workload:
+  #   type: StatefulSet
+  #   statefulSet:
+  #     persistentvolume:
+  #       volumes:
+  #         out-dir:
+  #           persistentVolumeClaim:
+  #             resources:
+  #               requests:
+  #                 storage: 2Gi
 
-  secretVolumes:
-    pingaccess-license:
-      items:
-        pingaccess.lic: /opt/in/instance/conf/pingaccess.lic
+  # secretVolumes:
+  #   pingaccess-license:
+  #     items:
+  #       pingaccess.lic: /opt/in/instance/conf/pingaccess.lic
 
-pingaccess-engine:
-  enabled: true
-  envs:
-    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
-    SERVER_PROFILE_PATH: baseline/pingaccess
-    # SERVER_PROFILE_BRANCH: lally-hooks
-  container:
-    replicaCount: 1
+# pingaccess-engine:
+#   enabled: true
+#   envs:
+#     SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+#     SERVER_PROFILE_PATH: baseline/pingaccess
+#     # SERVER_PROFILE_BRANCH: lally-hooks
+#   container:
+#     replicaCount: 1
 
-  secretVolumes:
-    pingaccess-license:
-      items:
-        pingaccess.lic: /opt/in/instance/conf/pingaccess.lic
+#   secretVolumes:
+#     pingaccess-license:
+#       items:
+#         pingaccess.lic: /opt/in/instance/conf/pingaccess.lic
 
 # pingdatagovernance:
 #   enabled: true
@@ -65,32 +65,32 @@ pingaccess-engine:
 # pingdataconsole:
 #   enabled: true
 
-pingdirectory:
-  container:
-    replicaCount: 1
-  enabled: true
-  envs:
-    SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
-    SERVER_PROFILE_PATH: baseline/pingdirectory
+# pingdirectory:
+#   container:
+#     replicaCount: 1
+#   enabled: true
+#   envs:
+#     SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
+#     SERVER_PROFILE_PATH: baseline/pingdirectory
 
 
-  secretVolumes:
-    pingdirectory-license:
-      items:
-        PingDirectory.lic: /opt/in/pd.profile/server-root/pre-setup/PingDirectory.lic
+#   secretVolumes:
+#     pingdirectory-license:
+#       items:
+#         PingDirectory.lic: /opt/in/pd.profile/server-root/pre-setup/PingDirectory.lic
 
 
   # This is a persistent volume claim to convert the pod from being ephemeral to stateful
-  workload:
-    type: StatefulSet
-    statefulSet:
-      persistentvolume:
-        volumes:
-          out-dir:
-            persistentVolumeClaim:
-              resources:
-                requests:
-                  storage: 4Gi
+  # workload:
+  #   type: StatefulSet
+  #   statefulSet:
+  #     persistentvolume:
+  #       volumes:
+  #         out-dir:
+  #           persistentVolumeClaim:
+  #             resources:
+  #               requests:
+  #                 storage: 4Gi
 
 # # pingdelegator:
 # #   enabled: true
@@ -104,9 +104,9 @@ pingfederate-admin:
   enabled: true
   container:
     replicaCount: 1
-    waitFor:
-      pingdirectory:
-        service: ldaps
+    # waitFor:
+    #   pingdirectory:
+    #     service: ldaps
   envs:
     SERVER_PROFILE_URL: https://github.com/mlallyGIT/pingidentity-server-profiles.git
     SERVER_PROFILE_PATH: getting-started/pingfederate
@@ -129,7 +129,7 @@ pingfederate-admin:
               storageClassName:
               resources:
                 requests:
-                  storage: 8Gi
+                  storage: 4Gi
 
 
 # This volume should be added to yaml prior to deployment to discover the license correctly
